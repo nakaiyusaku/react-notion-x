@@ -8,13 +8,15 @@ export function convertPage({
   blockMap,
   blockChildrenMap,
   pageMap,
-  parentMap
+  parentMap,
+  dbMap
 }: {
   pageId: string
   blockMap: types.BlockMap
   blockChildrenMap: types.BlockChildrenMap
   pageMap: types.PageMap
   parentMap: types.ParentMap
+  dbMap: any
 }): notion.ExtendedRecordMap {
   const compatBlocks = Object.values(blockMap).map((block) =>
     convertBlock({
@@ -22,7 +24,8 @@ export function convertPage({
       children: blockChildrenMap[block.id],
       pageMap,
       blockMap,
-      parentMap
+      parentMap,
+      dbMap
     })
   )
 
@@ -31,7 +34,8 @@ export function convertPage({
     blockMap,
     blockChildrenMap,
     pageMap,
-    parentMap
+    parentMap,
+    dbMap
   })
 
   const compatPageBlocks = Object.keys(pageMap)
@@ -42,7 +46,8 @@ export function convertPage({
         blockMap,
         blockChildrenMap,
         pageMap,
-        parentMap
+        parentMap,
+        dbMap
       })
     )
 
@@ -76,13 +81,15 @@ export function convertPageBlock({
   blockMap,
   blockChildrenMap,
   pageMap,
-  parentMap
+  parentMap,
+  dbMap
 }: {
   pageId: string
   blockMap: types.BlockMap
   blockChildrenMap: types.BlockChildrenMap
   pageMap: types.PageMap
   parentMap: types.ParentMap
+  dbMap: any
 }): notion.Block | null {
   const partialPage = pageMap[pageId]
   const page = partialPage as types.Page
@@ -93,7 +100,8 @@ export function convertPageBlock({
       children: blockChildrenMap[page.id],
       pageMap,
       blockMap,
-      parentMap
+      parentMap,
+      dbMap
     })
 
     return compatPageBlock

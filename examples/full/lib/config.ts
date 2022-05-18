@@ -1,8 +1,8 @@
 // TODO: change these to your own values
 // NOTE: rootNotionSpaceId is optional; set it to undefined if you don't want to
 // use it.
-export const rootNotionPageId = '067dd719a912471ea9a3ac10710e7fdf'
-export const rootNotionSpaceId = 'fde5ac74-eea3-4527-8f00-4482710e1af3'
+export const rootNotionPageId = 'aa2c8e92718345c48f84bc1b0d5db0d2'
+// export const rootNotionSpaceId = 'fde5ac74-eea3-4527-8f00-4482710e1af3'
 
 // NOTE: having this enabled can be pretty expensive as it re-generates preview
 // images each time a page is built. In a production setting, we recommend that

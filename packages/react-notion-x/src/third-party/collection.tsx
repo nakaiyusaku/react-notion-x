@@ -90,6 +90,7 @@ const CollectionViewBlock: React.FC<{
     setIsMounted(true)
   }, [])
 
+  console.log(block)
   const defaultCollectionViewId = viewIds[0]
   const [collectionState, setCollectionState] = useLocalStorage(block.id, {
     collectionViewId: defaultCollectionViewId

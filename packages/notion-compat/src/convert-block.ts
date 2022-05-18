@@ -10,13 +10,15 @@ export function convertBlock({
   children = [],
   pageMap,
   blockMap,
-  parentMap
+  parentMap,
+  dbMap
 }: {
   block: types.PartialBlock
   children?: string[]
   pageMap?: types.PageMap
   blockMap?: types.BlockMap
   parentMap?: types.ParentMap
+  dbMap: any
 }): notion.Block {
   const compatBlock: Partial<notion.BaseBlock> = {
     id: partialBlock.id
@@ -313,7 +315,80 @@ export function convertBlock({
       break
 
     case 'child_database':
-      // TODO
+      // console.log("---------")
+      // console.log("block---")
+      // console.log(block)
+      // console.log("blockDetails---")
+      // console.log(blockDetails)
+
+      {
+        const db = dbMap[block.id]
+        if (db) {
+          // type: 'collection_view',
+          compatBlock.type = 'collection_view'
+          // format: {
+          //   collection_pointer: {
+          //     id: '63ceaa92-1ec4-43f2-8d0e-236a52a2643b',
+          //     table: 'collection',
+          //     spaceId: 'adeaad50-8ba4-46e0-a712-f29c42532815'
+          //   }
+          // },
+          ;(compatBlock as notion.CollectionViewBlock).view_ids = [block.id]
+          compatBlock.format = {
+            collection_pointer: {
+              id: block.id,
+              table: 'collection'
+              //spaceId: // TODO
+            }
+          }
+        }
+        console.log(compatBlock)
+        // const notion = new Client({ auth: process.env.NOTION_TOKEN });
+        // (async () => {
+        // const databaseId = block.id;
+        // const response = await notion.databases.retrieve({ database_id: databaseId });
+        // console.log("response");
+        // console.log(JSON.stringify(response));
+
+        // const props = Object.entries(response.properties);
+        // // console.log(props);
+        // props.map(async ([key, prop]) => {
+        //   const pageId = block.id;
+        //   const propertyId = prop.id;
+        //   const response2 = await notion.pages.properties.retrieve({ page_id: pageId, property_id: propertyId });
+        //   console.log(response2);
+        // });
+
+        // const response4 = await notion.pages.retrieve({ page_id: databaseId });
+        // console.log(response4);
+
+        // const response3 = await notion.databases.query({
+        //   database_id: databaseId,
+        // });
+        // console.log("response3");
+        // console.log(JSON.stringify(response3));
+
+        // response3.results.map(async row => {
+        //   const page = await notion.pages.retrieve({ page_id: row.id});
+        //   console.log("response3-row");
+        //   console.log(JSON.stringify(page));
+        // });
+
+        // const props = Object.entries(response.properties);
+        // // console.log(props);
+        // props.map(async ([key, prop]) => {
+        //   const pageId = "202cdfc4-1d5e-449c-8857-90bb59e0dcdb";
+        //   const propertyId = prop.id;
+        //   const response2 = await notion.pages.properties.retrieve({ page_id: pageId, property_id: propertyId });
+        //   console.log(response2);
+        // });
+
+        // const page = await notion.pages.retrieve({ page_id: "5dd04022-936b-44cf-893b-42ae56864a77"});
+        // console.log(JSON.stringify(page));
+
+        // })();
+      }
+
       break
 
     case 'table':

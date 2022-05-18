@@ -1,4 +1,4 @@
-// import { promises as fs } from 'fs'
+import { promises as fs } from 'fs'
 import got, { OptionsOfJSONResponseBody } from 'got'
 import pMap from 'p-map'
 
@@ -148,10 +148,10 @@ export class NotionAPI {
               }
             )
 
-            // await fs.writeFile(
-            //   `${collectionId}-${collectionViewId}.json`,
-            //   JSON.stringify(collectionData.result, null, 2)
-            // )
+            await fs.writeFile(
+              `${collectionId}-${collectionViewId}.json`,
+              JSON.stringify(collectionData, null, 2)
+            )
 
             recordMap.block = {
               ...recordMap.block,
@@ -189,6 +189,14 @@ export class NotionAPI {
         }
       )
     }
+
+    console.log('---collections---')
+    console.log(JSON.stringify(recordMap.collection, null, '  '))
+    console.log('---collection_view---')
+    console.log(JSON.stringify(recordMap.collection_view, null, '  '))
+    console.log('---collection_query---')
+    console.log(JSON.stringify(recordMap.collection_query, null, '  '))
+    console.log('---end---')
 
     // Optionally fetch signed URLs for any embedded files.
     // NOTE: Similar to collection data, we default to eagerly fetching signed URL info
