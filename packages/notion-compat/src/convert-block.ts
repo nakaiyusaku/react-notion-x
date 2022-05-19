@@ -56,7 +56,8 @@ export function convertBlock({
       if (parentBlock) {
         switch (parentBlock.type) {
           case 'child_database':
-            compatBlock.parent_table = 'table'
+            // compatBlock.parent_table = 'table'
+            compatBlock.parent_table = 'collection'
             break
 
           case 'child_page':
@@ -318,11 +319,14 @@ export function convertBlock({
       // console.log("---------")
       // console.log("block---")
       // console.log(block)
+      // console.log(block.id)
       // console.log("blockDetails---")
       // console.log(blockDetails)
 
       {
         const db = dbMap[block.id]
+        // console.log(db);
+
         if (db) {
           // type: 'collection_view',
           compatBlock.type = 'collection_view'

@@ -6,6 +6,8 @@ import * as notion from 'notion-types'
 import * as types from './types'
 
 import { convertPage } from './convert-page'
+import { convertBlock } from './convert-block'
+import { convertRichTextItem } from './convert-rich-text'
 
 export class NotionCompatAPI {
   client: Client
@@ -27,15 +29,14 @@ export class NotionCompatAPI {
       //
       const dbBlocks = children.filter((e: any) => e.type === 'child_database')
       const dbList = await Promise.all(
-        dbBlocks.map((e) =>
-          this.client.databases.retrieve({ database_id: e.id })
+        dbBlocks.map(
+          async (e) =>
+            await this.client.databases.retrieve({ database_id: e.id })
         )
       )
-      const dbMap = dbList.reduce((target, key) => {
-        target[key.id] = key
-        return target
-      })
-      console.log(dbMap)
+      const dbMap = Object.fromEntries(dbList.map((e) => [e.id, e]))
+      // console.log("---dbMap---")
+      // console.log(JSON.stringify(dbMap, null, 2))
 
       const { blockMap, blockChildrenMap, pageMap, parentMap } =
         await this.resolvePage(pageId)
@@ -69,12 +70,14 @@ export class NotionCompatAPI {
 
             // console.log(e.properties);
 
-            const props = Object.keys(e.properties).map((key) => {
-              return {
-                key: key,
-                ...e.properties[key]
-              }
-            })
+            const props = Object.keys(e.properties)
+              .map((key) => {
+                return {
+                  key: key,
+                  ...e.properties[key]
+                }
+              })
+              .reverse()
             const format = {
               collection_page_properties: props
                 .filter((prop) => prop.id !== 'title')
@@ -98,14 +101,22 @@ export class NotionCompatAPI {
                   default:
                     break
                 }
-                return [
-                  prop.id,
-                  {
-                    name: prop.name,
-                    type: type,
-                    options: prop.multi_select?.options ?? null
-                  }
-                ]
+                const propDetail: any = {
+                  name: prop.name,
+                  type: type
+                }
+                // console.log(JSON.stringify(prop, null, "  "));
+                if (prop.multi_select?.options) {
+                  propDetail.options =
+                    prop.multi_select?.options.map((option) => {
+                      return {
+                        id: option.id,
+                        color: option.color,
+                        value: option.name
+                      }
+                    }) ?? []
+                }
+                return [prop.id, propDetail]
               })
             )
 
@@ -117,8 +128,8 @@ export class NotionCompatAPI {
                 name: [[e.title[0].plain_text]] ?? null, // TODO: 無題の時nullでいいか確認
                 schema: schema,
                 icon: e.icon,
-                parent_id: e.parent?.page_id,
-                parent_table: 'page',
+                parent_id: e.id,
+                parent_table: 'block',
                 alive: !e.archived,
                 migrated: true, // TODO: 何かわからない
                 format: format
@@ -128,18 +139,18 @@ export class NotionCompatAPI {
           .map((e) => [e.value.id, e])
       )
       recordMap.collection = collections
-      console.log('---collections---')
-      console.log(JSON.stringify(collections, null, '  '))
 
       const collection_view = Object.fromEntries(
         dbList
           .map((e: any): any => {
-            const props = Object.keys(e.properties).map((key) => {
-              return {
-                key: key,
-                ...e.properties[key]
-              }
-            })
+            const props = Object.keys(e.properties)
+              .map((key) => {
+                return {
+                  key: key,
+                  ...e.properties[key]
+                }
+              })
+              .reverse()
             const tableProps = props.map((prop) => {
               return {
                 visible: true,
@@ -176,8 +187,6 @@ export class NotionCompatAPI {
           .map((e) => [e.value.id, e])
       )
       recordMap.collection_view = collection_view
-      console.log('---collection_view---')
-      console.log(JSON.stringify(collection_view, null, '  '))
 
       const queryResults = await Promise.all(
         dbList.map(async (db) => {
@@ -188,13 +197,130 @@ export class NotionCompatAPI {
             //   direction: "ascending"
             // }]
           })
-          // console.log(queryResult);
+          // console.log(JSON.stringify(queryResult.results.map(e=>e), null, "  "));
 
           if (collection_view[db.id]) {
-            collection_view[db.id].page_sort = queryResult.results.map(
+            collection_view[db.id].value.page_sort = queryResult.results.map(
               (result) => result.id
             )
           }
+
+          blockChildrenMap[db.id] = queryResult.results.map(
+            (result) => result.id
+          )
+
+          // blockMapに詰める
+          await Promise.all(
+            queryResult.results.map(async (item: any) => {
+              const page = (await this.client.pages.retrieve({
+                page_id: item.id
+              })) as any
+              const block = await this.client.blocks.retrieve({
+                block_id: item.id
+              })
+
+              if (page.parent) {
+                const parent = page.parent
+                // console.log("---parent---");
+                // console.log(parent);
+                parentMap[block.id] = parent.database_id
+              }
+
+              // console.log("---compatBlock---");
+              // console.log(block.id);
+              // console.log(JSON.stringify(block, null, "  "));
+              const compatBlock = convertBlock({
+                block: block,
+                children: blockChildrenMap[block.id],
+                pageMap: pageMap,
+                blockMap: blockMap,
+                parentMap: parentMap,
+                dbMap: dbMap
+              })
+
+              const blockProps = await Promise.all(
+                Object.keys(page.properties).map(async (propKey) => {
+                  const prop = page.properties[propKey]
+                  const response = await this.client.pages.properties.retrieve({
+                    page_id: item.id,
+                    property_id: prop.id
+                  })
+                  return response
+                })
+              )
+
+              // if (item.id === "05282a0b-379c-4ca5-8dc9-e8ec85aa15b4"){
+              //   console.log(JSON.stringify(blockProps, null, "  "));
+              // }
+              blockProps.map((prop) => {
+                if (prop.object === 'list') {
+                  prop.results.map((propResult) => {
+                    switch (propResult.type) {
+                      case 'rich_text':
+                        compatBlock.properties = {
+                          ...compatBlock.properties,
+                          [propResult.id]: [
+                            convertRichTextItem(propResult.rich_text)
+                          ]
+                        }
+                        break
+                      case 'title':
+                        // 既に入っているはずなので何もしない
+                        break
+                      default:
+                        console.log('未対応Prop')
+                        console.log(JSON.stringify(propResult, null, 2))
+                        break
+                    }
+                  })
+                } else if (prop.object === 'property_item') {
+                  switch (prop.type) {
+                    case 'multi_select':
+                      compatBlock.properties = {
+                        ...compatBlock.properties,
+                        [prop.id]: [
+                          [prop.multi_select.map((e) => e.name).join(',')]
+                        ]
+                      }
+                      break
+                    default:
+                      console.log('未対応Prop')
+                      console.log(JSON.stringify(prop, null, 2))
+                      break
+                  }
+                }
+              })
+              // console.log(JSON.stringify(page, null, "  "));
+
+              recordMap.block = {
+                ...recordMap.block,
+                [item.id]: {
+                  role: 'reader',
+                  value: compatBlock
+                }
+              }
+
+              // console.log("------");
+              // console.log(JSON.stringify(compatBlock, null, "  "));
+
+              // const itemId: string = item.id;
+              // const itemPage = await this.resolvePage(itemId);
+
+              // const recordMap2 = convertPage({
+              //   pageId: itemId,
+              //   blockMap: itemPage.blockMap,
+              //   blockChildrenMap: itemPage.blockChildrenMap,
+              //   pageMap: itemPage.pageMap,
+              //   parentMap: itemPage.parentMap,
+              //   dbMap
+              // });
+
+              // recordMap.block = {
+              //   ...recordMap.block,
+              //   ...recordMap2.block
+              // };
+            })
+          )
 
           return {
             collectionId: db.id,
@@ -219,9 +345,28 @@ export class NotionCompatAPI {
         })
       ) as any
       recordMap.collection_query = collection_query
-      console.log('---collection_query---')
-      console.log(JSON.stringify(collection_query, null, '  '))
-      console.log('---end---')
+
+      // console.log('---compatBlock---')
+      // console.log(JSON.stringify(recordMap.block["5dd04022-936b-44cf-893b-42ae56864a77"], null, '  '))
+      // console.log('---compatBlock---')
+      // console.log(JSON.stringify(recordMap.block["0981fcf1-8313-4ee5-b611-a69deca88ce4"], null, '  '))
+      // console.log('---compatBlock---')
+      // console.log(JSON.stringify(recordMap.block["bf952324-cd9a-458a-940b-25d76909936c"], null, '  '))
+      // console.log('---compatBlock---')
+      // console.log(JSON.stringify(recordMap.block["19e101ea-c8d1-4159-a7ef-fdc94275ffb7"], null, '  '))
+      // console.log('---compatBlock---')
+      // console.log(JSON.stringify(recordMap.block["356535b3-b1c0-4876-885d-b8370c001f84"], null, '  '))
+
+      // console.log('---compatBlock---')
+      // console.log(JSON.stringify(recordMap.block["05282a0b-379c-4ca5-8dc9-e8ec85aa15b4"], null, '  '))
+
+      // console.log('---collections---')
+      // console.log(JSON.stringify(collections, null, '  '))
+      // console.log('---collection_view---')
+      // console.log(JSON.stringify(collection_view, null, '  '))
+      // console.log('---collection_query---')
+      // console.log(JSON.stringify(collection_query, null, '  '))
+      // console.log('---end---')
       ;(recordMap as any).raw = {
         page,
         block,

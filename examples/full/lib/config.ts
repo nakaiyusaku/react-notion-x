@@ -1,7 +1,7 @@
 // TODO: change these to your own values
 // NOTE: rootNotionSpaceId is optional; set it to undefined if you don't want to
 // use it.
-export const rootNotionPageId = 'aa2c8e92718345c48f84bc1b0d5db0d2'
+export const rootNotionPageId = '15d03d18cc1145178de93497c923b664'
 // export const rootNotionSpaceId = 'fde5ac74-eea3-4527-8f00-4482710e1af3'
 
 // NOTE: having this enabled can be pretty expensive as it re-generates preview

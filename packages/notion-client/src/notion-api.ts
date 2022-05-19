@@ -1,4 +1,4 @@
-import { promises as fs } from 'fs'
+// import { promises as fs } from 'fs'
 import got, { OptionsOfJSONResponseBody } from 'got'
 import pMap from 'p-map'
 
@@ -148,10 +148,10 @@ export class NotionAPI {
               }
             )
 
-            await fs.writeFile(
-              `${collectionId}-${collectionViewId}.json`,
-              JSON.stringify(collectionData, null, 2)
-            )
+            // await fs.writeFile(
+            //   `${collectionId}-${collectionViewId}.json`,
+            //   JSON.stringify(collectionData, null, 2)
+            // )
 
             recordMap.block = {
               ...recordMap.block,
@@ -190,13 +190,27 @@ export class NotionAPI {
       )
     }
 
-    console.log('---collections---')
-    console.log(JSON.stringify(recordMap.collection, null, '  '))
-    console.log('---collection_view---')
-    console.log(JSON.stringify(recordMap.collection_view, null, '  '))
-    console.log('---collection_query---')
-    console.log(JSON.stringify(recordMap.collection_query, null, '  '))
-    console.log('---end---')
+    // console.log('---compatBlock---')
+    // console.log(JSON.stringify(recordMap.block["5dd04022-936b-44cf-893b-42ae56864a77"], null, '  '))
+    // console.log('---compatBlock---')
+    // console.log(JSON.stringify(recordMap.block["0981fcf1-8313-4ee5-b611-a69deca88ce4"], null, '  '))
+    // console.log('---compatBlock---')
+    // console.log(JSON.stringify(recordMap.block["bf952324-cd9a-458a-940b-25d76909936c"], null, '  '))
+    // console.log('---compatBlock---')
+    // console.log(JSON.stringify(recordMap.block["19e101ea-c8d1-4159-a7ef-fdc94275ffb7"], null, '  '))
+    // console.log('---compatBlock---')
+    // console.log(JSON.stringify(recordMap.block["356535b3-b1c0-4876-885d-b8370c001f84"], null, '  '))
+
+    // console.log('---compatBlock---')
+    // console.log(JSON.stringify(recordMap.block["05282a0b-379c-4ca5-8dc9-e8ec85aa15b4"], null, '  '))
+
+    // console.log('---collections---')
+    // console.log(JSON.stringify(recordMap.collection, null, '  '))
+    // console.log('---collection_view---')
+    // console.log(JSON.stringify(recordMap.collection_view, null, '  '))
+    // console.log('---collection_query---')
+    // console.log(JSON.stringify(recordMap.collection_query, null, '  '))
+    // console.log('---end---')
 
     // Optionally fetch signed URLs for any embedded files.
     // NOTE: Similar to collection data, we default to eagerly fetching signed URL info
